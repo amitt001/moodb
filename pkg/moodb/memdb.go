@@ -1,5 +1,5 @@
-// Package moodb contains implementation of key-value store
-package main
+// Package store contains implementation of key-value store
+package moodb
 
 // KVRow individual row in db
 type KVRow struct {
@@ -9,22 +9,22 @@ type KVRow struct {
 
 // KVStore DB memory map
 type KVStore struct {
-	data map[string]KVRow
+	Data map[string]KVRow
 }
 
 // Get value for a key
 func (s *KVStore) Get(key string) (string, error) {
-	if s.data[key] != (KVRow{}) {
-		return s.data[key].Value, nil
+	if s.Data[key] != (KVRow{}) {
+		return s.Data[key].Value, nil
 	}
 	return "", ErrKeyNotFound
 }
 
 // Create to save data
 func (s *KVStore) Create(key, value string) (KVRow, error) {
-	s.data = make(map[string]KVRow)
-	s.data[key] = KVRow{key, value}
-	return s.data[key], nil
+	s.Data = make(map[string]KVRow)
+	s.Data[key] = KVRow{key, value}
+	return s.Data[key], nil
 }
 
 // Update an alias for Create

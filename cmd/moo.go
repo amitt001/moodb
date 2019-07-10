@@ -1,10 +1,11 @@
 package main
 
 import "fmt"
+import "moodb/pkg/moodb"
 
 func main() {
-	store := new(KVStore)
-	store.data = make(map[string]KVRow)
+	store := new(moodb.KVStore)
+	store.Data = make(map[string]moodb.KVRow)
 
 	keys := map[string]string{"name": "Amit", "age": "23"}
 
@@ -17,4 +18,6 @@ func main() {
 			fmt.Printf("%s: %s\n", key, value)
 		}
 	}
+
+	cli()
 }
