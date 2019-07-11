@@ -21,21 +21,22 @@ func (s *KVStore) Get(key string) (string, error) {
 }
 
 // Create to save data
-func (s *KVStore) Create(key, value string) (KVRow, error) {
+func (s *KVStore) Create(key, value string) (string, error) {
 	s.Data = make(map[string]KVRow)
 	s.Data[key] = KVRow{key, value}
-	return s.Data[key], nil
+	return "Inserted 1", nil
 }
 
 // Update an alias for Create
-func (s *KVStore) Update(key, value string) (KVRow, error) {
+func (s *KVStore) Update(key, value string) (string, error) {
 	return s.Create(key, value)
 }
 
 // Delete row data by key
-func (s *KVStore) Delete(key string) (bool, error) {
+func (s *KVStore) Delete(key string) (string, error) {
 	if found, _ := s.Get(key); len(found) == 0 {
-		return false, ErrKeyNotFound
+		return "Deleted 0", ErrKeyNotFound
 	}
-	return true, nil
+	delete(s.Data, key)
+	return "Deleted 1", nil
 }
