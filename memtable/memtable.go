@@ -37,7 +37,8 @@ func (s *KVStore) Create(key, value string) (string, error) {
 
 // Update an alias for Create
 func (s *KVStore) Update(key, value string) (string, error) {
-	return s.Create(key, value)
+	_, err := s.Create(key, value)
+	return "Updated 1", err
 }
 
 // Delete row data by key

@@ -13,9 +13,9 @@ type commands struct {
 	GET    string
 	INSERT string
 	SET    string
+	UPDATE string
 	DELETE string
 	DEL    string
-	UPDATE string
 }
 
 var store = memtable.NewDB()
@@ -49,12 +49,14 @@ func processedCmd(input string) (string, string, string, error) {
 		err = ErrKeyValueMissing
 	case 2:
 		cmd = strings.ToUpper(fields[0])
+
 		switch cmd {
-		case CommandEnum.GET, CommandEnum.DELETE:
+		case CommandEnum.GET, CommandEnum.DELETE, CommandEnum.DEL:
 			key = fields[1]
 		default:
 			err = ErrInvalidNoOfArguments
 		}
+
 	case 3:
 		cmd, key, value = fields[0], fields[1], fields[2]
 	default:
@@ -67,18 +69,19 @@ func processedCmd(input string) (string, string, string, error) {
 }
 
 func cli() {
+	var result string
 	log.SetFlags(0)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
 		fmt.Printf("o> ")
 
-		cmd, err := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		cmd, key, value, err := processedCmd(cmd)
+		cmd, key, value, err := processedCmd(input)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -89,7 +92,6 @@ func cli() {
 			continue
 		}
 
-		var result string
 		if value == "" {
 			result, err = method.(func(string) (string, error))(key)
 		} else {
