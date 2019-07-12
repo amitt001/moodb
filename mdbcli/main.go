@@ -1,11 +1,10 @@
 package main
 
-import "fmt"
-import "moodb/pkg/moodb"
+import (
+	"fmt"
+)
 
 func main() {
-	store := new(moodb.KVStore)
-	store.Data = make(map[string]moodb.KVRow)
 
 	keys := map[string]string{"name": "Amit", "age": "23"}
 
