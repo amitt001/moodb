@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package mdbserverpb;
+
+enum StatusCode {
+    OK = 0;
+    FAIL = 1;
+}
+
+service Mdb {
+    rpc Get(GetRequest) returns (GetResponse) {}
+    // rpc Insert(SetRequest) returns (SetResponse) {}
+    // rpc Set(SetRequest) returns (SetResponse) {}
+    // rpc Update(SetRequest) returns (SetResponse) {}
+    // rpc Delete(DelRequest) returns (DelResponse) {}
+    // rpc Del(DelRequest) returns (DelResponse) {}
+}
+
+message GetRequest {
+    string key = 1;
+}
+
+message GetResponse {
+    string value = 1;
+    StatusCode statusCode = 2;
+}
+
+message SetRequest {
+    string key = 1;
+    string value = 2;
+}
+
+message SetResponse {
+    string message = 1;
+    StatusCode statusCode = 2;
+}
+
+message DelRequest {
+    string key = 1;
+}
+
+message DelResponse {
+    string message = 1;
+    StatusCode statusCode = 2;
+}
