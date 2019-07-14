@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"moodb/memtable"
 	"os"
 	"strings"
+
+	"github.com/amitt001/moodb/memtable"
 )
 
 type commands struct {
