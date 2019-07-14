@@ -9,11 +9,9 @@ enum StatusCode {
 
 service Mdb {
     rpc Get(GetRequest) returns (GetResponse) {}
-    // rpc Insert(SetRequest) returns (SetResponse) {}
-    // rpc Set(SetRequest) returns (SetResponse) {}
-    // rpc Update(SetRequest) returns (SetResponse) {}
-    // rpc Delete(DelRequest) returns (DelResponse) {}
-    // rpc Del(DelRequest) returns (DelResponse) {}
+    rpc Set(SetRequest) returns (SetResponse) {}
+    rpc Update(SetRequest) returns (SetResponse) {}
+    rpc Del(DelRequest) returns (DelResponse) {}
 }
 
 message GetRequest {
@@ -22,7 +20,8 @@ message GetRequest {
 
 message GetResponse {
     string value = 1;
-    StatusCode statusCode = 2;
+    string resp_msg = 2;
+    StatusCode statusCode = 3;
 }
 
 message SetRequest {
@@ -32,7 +31,8 @@ message SetRequest {
 
 message SetResponse {
     string message = 1;
-    StatusCode statusCode = 2;
+    string resp_msg = 2;
+    StatusCode statusCode = 3;
 }
 
 message DelRequest {
@@ -41,5 +41,6 @@ message DelRequest {
 
 message DelResponse {
     string message = 1;
-    StatusCode statusCode = 2;
+    string resp_msg = 2;
+    StatusCode statusCode = 3;
 }

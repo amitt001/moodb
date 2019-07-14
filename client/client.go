@@ -1,5 +1,5 @@
-// Package main implements a client for Greeter service.
-package main
+// Package main implements a client for MdbServer
+package client
 
 import (
 	"context"
@@ -28,7 +28,7 @@ type clientConfig struct {
 type MdbClient struct {
 	config clientConfig
 	client pb.MdbClient
-	conn *grpc.ClientConn
+	conn   *grpc.ClientConn
 }
 
 // ServerAddress returns the address of mdb server.
@@ -68,25 +68,54 @@ func (c *MdbClient) setupClient() {
 
 // Get the value from server for a given key
 func (c *MdbClient) Get(key string) string {
-	// fmt.Println(c.ServerAddress(), c.config.Server.Timeout* 1000000, time.Second)
 	ctx, cancel := context.WithTimeout(
-		context.Background(), c.config.Server.Timeout* 1000000 *time.Second)
+		context.Background(), c.config.Server.Timeout*time.Second)
 	defer cancel()
 	r, err := c.client.Get(ctx, &pb.GetRequest{Key: key})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("Error: %v", err)
 	}
-
 	return r.Value
 }
 
-func main() {
+func (c *MdbClient) Set(key, value string) string {
+	ctx, cancel := context.WithTimeout(
+		context.Background(), c.config.Server.Timeout*time.Second)
+	defer cancel()
+	r, err := c.client.Set(ctx, &pb.SetRequest{Key: key, Value: value})
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	return r.Message
+}
+
+func (c *MdbClient) Update(key, value string) string {
+	ctx, cancel := context.WithTimeout(
+		context.Background(), c.config.Server.Timeout*time.Second)
+	defer cancel()
+	r, err := c.client.Update(ctx, &pb.SetRequest{Key: key, Value: value})
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	return r.Message
+}
+
+func (c *MdbClient) Del(key string) string {
+	ctx, cancel := context.WithTimeout(
+		context.Background(), c.config.Server.Timeout*time.Second)
+	defer cancel()
+	r, err := c.client.Del(ctx, &pb.DelRequest{Key: key})
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+	return r.Message
+}
+
+// NewClient returns a configured client instance to interact with server
+func NewClient() MdbClient {
 	// Load config
 	client := MdbClient{}
 	client.loadClientConfig("")
 	client.setupClient()
-	defer client.conn.Close()
-
-	v := client.Get("name")
-	log.Printf("Greeting: %s", v)
+	return client
 }

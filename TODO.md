@@ -4,6 +4,14 @@
 
 [x] Locks
 
-[] Seperate client and server
+[x] Seperate client and server
 
-[] Locks
+[] WAL
+
+[] WAL recovery
+
+[] In-memory db snapshort
+
+[] Authentication
+
+[] Logging

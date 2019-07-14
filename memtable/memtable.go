@@ -61,5 +61,5 @@ func NewDB() (store *KVStore) {
 	once.Do(func() {
 		store = &KVStore{data: make(map[string]KVRow)}
 	})
-	return
+	return store
 }

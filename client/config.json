@@ -2,6 +2,6 @@
     "server" : {
         "host": "localhost",
         "port": 50051,
-        "timeout": 3000
+        "timeout": 3
     }
 }
