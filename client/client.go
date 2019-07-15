@@ -1,4 +1,4 @@
-// Package main implements a client for MdbServer
+// Package client implements a client for MdbServer
 package client
 
 import (
@@ -78,6 +78,7 @@ func (c *MdbClient) Get(key string) string {
 	return r.Value
 }
 
+// Set grpc client
 func (c *MdbClient) Set(key, value string) string {
 	ctx, cancel := context.WithTimeout(
 		context.Background(), c.config.Server.Timeout*time.Second)
@@ -89,6 +90,7 @@ func (c *MdbClient) Set(key, value string) string {
 	return r.Message
 }
 
+// Update grpc client
 func (c *MdbClient) Update(key, value string) string {
 	ctx, cancel := context.WithTimeout(
 		context.Background(), c.config.Server.Timeout*time.Second)
@@ -100,6 +102,7 @@ func (c *MdbClient) Update(key, value string) string {
 	return r.Message
 }
 
+// Del grpc client
 func (c *MdbClient) Del(key string) string {
 	ctx, cancel := context.WithTimeout(
 		context.Background(), c.config.Server.Timeout*time.Second)

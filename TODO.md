@@ -4,7 +4,7 @@
 
 [x] Locks
 
-[x] Seperate client and server
+[x] DB client and server
 
 [] WAL
 
