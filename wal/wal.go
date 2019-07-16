@@ -2,27 +2,34 @@ package wal
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
+	"hash/crc32"
 	"io/ioutil"
 	"log"
+	"moodb/memtable"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
+
+	pb "github.com/amitt001/moodb/wal/walpb"
 )
 
-type record struct {
-	seq  int64
-	hash string
-	size int64
-	data string
-}
+var crcTable = crc32.MakeTable(crc32.Castagnoli)
 
 // Wal datatype
 type Wal struct {
 	baseSeq int64
+	seq     int64
 	dirPath string
+	hash    uint32
 	file    *os.File
 	mu      sync.Mutex
+}
+
+// Close the WAL file
+func (w *Wal) Close() {
+	w.file.Close()
 }
 
 // WalPath returns wal's absolute path
@@ -68,6 +75,42 @@ func (w *Wal) initWalFile() error {
 
 }
 
+func (w *Wal) nextseq() int64 {
+	return w.seq + 1
+}
+
+func (w *Wal) CalculateHash(data *pb.Data) uint32 {
+	h := crc32.New(crcTable)
+	h.Write(([]byte)(fmt.Sprint(w.hash)))
+	d, err := proto.Marshal(data)
+	// TODO handle this
+	if err != nil {
+	}
+	h.Write([]byte(d))
+	return h.Sum32()
+}
+
+// AppendLog appends the Record to WAL
+func (w *Wal) AppendLog(kvrow *memtable.KVRow) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	var err error
+
+	record := &pb.Record{
+		Seq:  w.nextseq(),
+		Hash: "abc",
+		Size: 2,
+		Data: &pb.Data{Key: kvrow.Key, Value: kvrow.Value, CreatedAt: kvrow.CreatedAt},
+	}
+	fmt.Println(record)
+	d, err := proto.Marshal(record)
+	fmt.Println(d, err)
+	return err
+}
+
+// TODO look into filelock
+
 // Exists check if the given path is valid
 func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
@@ -80,7 +123,7 @@ func Exists(path string) (bool, error) {
 }
 
 // InitWal initializes WAL if directory is empty.
-func InitWal(dirPath string) string {
+func InitWal(dirPath string) *Wal {
 	var err error
 	if valid, err := Exists(dirPath); !valid {
 		log.Fatal(err)
@@ -91,5 +134,5 @@ func InitWal(dirPath string) string {
 	if err != nil {
 		log.Fatalf("WAL: %s", err)
 	}
-	return wal.WalPath()
+	return &wal
 }

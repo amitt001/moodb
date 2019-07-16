@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package walpb;
+
+message Data {
+    string key = 1;
+    string value = 2;
+    int64 created_at = 3;
+}
+
+message Record {
+    int64 seq = 1;
+    string hash = 2;
+    int64 size = 3;
+    Data data = 4;
+}

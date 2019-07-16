@@ -8,6 +8,8 @@
 
 [] WAL
 
+[] WAL file lock
+
 [] WAL recovery
 
 [] In-memory db snapshort
