@@ -1,21 +1,38 @@
 package wal
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/gob"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"hash/crc32"
 	"io/ioutil"
 	"log"
-	"moodb/memtable"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	pb "github.com/amitt001/moodb/wal/walpb"
 )
 
-var crcTable = crc32.MakeTable(crc32.Castagnoli)
+var (
+	crcTable = crc32.MakeTable(crc32.Castagnoli)
+	fMode = os.FileMode(0644)
+)
+
+
+type Data struct {
+	Cmd string
+	Key string
+	Value string
+	CreatedAt int64
+}
+
+type LogRow struct {
+	Seq int64
+	Hash uint32
+	Data *Data
+}
+
 
 // Wal datatype
 type Wal struct {
@@ -25,6 +42,7 @@ type Wal struct {
 	hash    uint32
 	file    *os.File
 	mu      sync.Mutex
+	encoder *gob.Encoder
 }
 
 // Close the WAL file
@@ -40,7 +58,7 @@ func (w *Wal) WalPath() string {
 
 // touchWal creates, if not exists, & returns the fileObj for given path
 func (w *Wal) touchWal(path string) error {
-	fileObj, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0666)
+	fileObj, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, fMode)
 	w.file = fileObj
 	return err
 }
@@ -71,6 +89,8 @@ func (w *Wal) initWalFile() error {
 		w.baseSeq = seq
 	}
 	err = w.touchWal(w.WalPath())
+	encoder := gob.NewEncoder(w.file)
+	w.encoder = encoder
 	return err
 
 }
@@ -79,33 +99,25 @@ func (w *Wal) nextseq() int64 {
 	return w.seq + 1
 }
 
-func (w *Wal) CalculateHash(data *pb.Data) uint32 {
+func (w *Wal) CalculateHash(data *Data) uint32 {
 	h := crc32.New(crcTable)
 	h.Write(([]byte)(fmt.Sprint(w.hash)))
-	d, err := proto.Marshal(data)
-	// TODO handle this
-	if err != nil {
-	}
-	h.Write([]byte(d))
+	var bin_buf bytes.Buffer
+	binary.Write(&bin_buf, binary.BigEndian, data)
+	h.Write(bin_buf.Bytes())
 	return h.Sum32()
 }
 
 // AppendLog appends the Record to WAL
-func (w *Wal) AppendLog(kvrow *memtable.KVRow) error {
+func (w *Wal) AppendLog(data *Data) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	var err error
-
-	record := &pb.Record{
-		Seq:  w.nextseq(),
-		Hash: "abc",
-		Size: 2,
-		Data: &pb.Data{Key: kvrow.Key, Value: kvrow.Value, CreatedAt: kvrow.CreatedAt},
-	}
-	fmt.Println(record)
-	d, err := proto.Marshal(record)
-	fmt.Println(d, err)
+	// logRow := &LogRow{Seq: w.nextseq(), Hash: w.CalculateHash(data), Data: data}
+	lineData := fmt.Sprintf("%d,%d:", w.nextseq(), w.CalculateHash(data))
+	w.file.WriteString(lineData)
+	err := w.encoder.Encode(data)
+	w.file.WriteString("\n")
 	return err
 }
 
@@ -131,6 +143,7 @@ func InitWal(dirPath string) *Wal {
 
 	wal := Wal{dirPath: dirPath}
 	err = wal.initWalFile()
+
 	if err != nil {
 		log.Fatalf("WAL: %s", err)
 	}

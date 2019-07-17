@@ -3,6 +3,7 @@ syntax = "proto3";
 package walpb;
 
 message Data {
+    uint32 hash = 1;
     string key = 1;
     string value = 2;
     int64 created_at = 3;
