@@ -3,7 +3,6 @@ package wal
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/gob"
 	"fmt"
 	"hash/crc32"
 	"io/ioutil"
@@ -12,27 +11,22 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	pb "github.com/amitt001/moodb/wal/walpb"
 )
 
 var (
 	crcTable = crc32.MakeTable(crc32.Castagnoli)
-	fMode = os.FileMode(0644)
+	fMode    = os.FileMode(0644)
 )
 
-
-type Data struct {
-	Cmd string
-	Key string
-	Value string
-	CreatedAt int64
-}
-
-type LogRow struct {
-	Seq int64
+// LogRecord stores individual db command record. Each record
+// contains complete data abount a command.
+type LogRecord struct {
+	Seq  int64
 	Hash uint32
-	Data *Data
+	Data *pb.Data
 }
-
 
 // Wal datatype
 type Wal struct {
@@ -63,7 +57,6 @@ func (w *Wal) touchWal(path string) error {
 	return err
 }
 
-// initWalFile initializes, if doesn't exists, or creates a new wal
 func (w *Wal) initWalFile() error {
 	files, err := ioutil.ReadDir(w.dirPath)
 	if err != nil {
@@ -71,26 +64,27 @@ func (w *Wal) initWalFile() error {
 	}
 
 	// Only take files with ext ".wal"
-	walExtFiles := []os.FileInfo{}
+	var latestWal os.FileInfo
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".wal") {
-			walExtFiles = append(walExtFiles, file)
+			latestWal = file
+			break
 		}
 	}
 
-	// Empty not empty dir, get the seq no
-	if len(walExtFiles) > 0 {
-		latestWal := walExtFiles[len(walExtFiles)-1].Name()
-
-		seq, err := strconv.ParseInt(strings.Split(latestWal, ".")[0], 10, 64)
+	// Each run creates a new wal but if a wal already exists use the next seq no.
+	if latestWal.Name() != "" {
+		walName := latestWal.Name()
+		seq, err := strconv.ParseInt(strings.Split(walName, ".")[0], 10, 64)
 		if err != nil {
 			return err
 		}
 		w.baseSeq = seq
 	}
-	err = w.touchWal(w.WalPath())
-	encoder := gob.NewEncoder(w.file)
-	w.encoder = encoder
+	if err = w.touchWal(w.WalPath()); err != nil {
+		log.Fatal(err)
+	}
+	w.encoder = gob.NewEncoder(w.file)
 	return err
 
 }
@@ -99,7 +93,7 @@ func (w *Wal) nextseq() int64 {
 	return w.seq + 1
 }
 
-func (w *Wal) CalculateHash(data *Data) uint32 {
+func (w *Wal) CalculateHash(data *pb.Data) uint32 {
 	h := crc32.New(crcTable)
 	h.Write(([]byte)(fmt.Sprint(w.hash)))
 	var bin_buf bytes.Buffer
@@ -109,7 +103,7 @@ func (w *Wal) CalculateHash(data *Data) uint32 {
 }
 
 // AppendLog appends the Record to WAL
-func (w *Wal) AppendLog(data *Data) error {
+func (w *Wal) AppendLog(data *pb.Data) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
