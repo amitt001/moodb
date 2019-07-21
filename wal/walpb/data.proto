@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package walpb;
+
+// Record stores the command data and meta
+message Data {
+    int64 seq = 1;
+    string cmd = 2;
+    string key = 3;
+    string value = 4;
+    int64 created_at = 5;
+}

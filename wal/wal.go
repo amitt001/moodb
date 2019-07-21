@@ -1,8 +1,7 @@
 package wal
 
 import (
-	"bytes"
-	"encoding/binary"
+	"encoding/gob"
 	"fmt"
 	"hash/crc32"
 	"io/ioutil"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
+
 	pb "github.com/amitt001/moodb/wal/walpb"
 )
 
@@ -20,9 +21,9 @@ var (
 	fMode    = os.FileMode(0644)
 )
 
-// LogRecord stores individual db command record. Each record
+// Record stores individual db command record. Each record
 // contains complete data abount a command.
-type LogRecord struct {
+type Record struct {
 	Seq  int64
 	Hash uint32
 	Data *pb.Data
@@ -33,10 +34,10 @@ type Wal struct {
 	baseSeq int64
 	seq     int64
 	dirPath string
-	hash    uint32
 	file    *os.File
 	mu      sync.Mutex
 	encoder *gob.Encoder
+	decoder *gob.Decoder
 }
 
 // Close the WAL file
@@ -52,7 +53,7 @@ func (w *Wal) WalPath() string {
 
 // touchWal creates, if not exists, & returns the fileObj for given path
 func (w *Wal) touchWal(path string) error {
-	fileObj, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, fMode)
+	fileObj, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, fMode)
 	w.file = fileObj
 	return err
 }
@@ -68,37 +69,40 @@ func (w *Wal) initWalFile() error {
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".wal") {
 			latestWal = file
-			break
 		}
 	}
 
 	// Each run creates a new wal but if a wal already exists use the next seq no.
-	if latestWal.Name() != "" {
+	if latestWal != nil {
 		walName := latestWal.Name()
 		seq, err := strconv.ParseInt(strings.Split(walName, ".")[0], 10, 64)
 		if err != nil {
 			return err
 		}
-		w.baseSeq = seq
+		w.baseSeq = seq + 1
 	}
 	if err = w.touchWal(w.WalPath()); err != nil {
-		log.Fatal(err)
+		return err
 	}
+	gob.Register(Record{})
 	w.encoder = gob.NewEncoder(w.file)
+	w.decoder = gob.NewDecoder(w.file)
 	return err
-
 }
 
 func (w *Wal) nextseq() int64 {
-	return w.seq + 1
+	w.seq++
+	return w.seq
 }
 
+// CalculateHash returns the crc32 value for data
 func (w *Wal) CalculateHash(data *pb.Data) uint32 {
 	h := crc32.New(crcTable)
-	h.Write(([]byte)(fmt.Sprint(w.hash)))
-	var bin_buf bytes.Buffer
-	binary.Write(&bin_buf, binary.BigEndian, data)
-	h.Write(bin_buf.Bytes())
+	d, err := proto.Marshal(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	h.Write(d)
 	return h.Sum32()
 }
 
@@ -107,11 +111,8 @@ func (w *Wal) AppendLog(data *pb.Data) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// logRow := &LogRow{Seq: w.nextseq(), Hash: w.CalculateHash(data), Data: data}
-	lineData := fmt.Sprintf("%d,%d:", w.nextseq(), w.CalculateHash(data))
-	w.file.WriteString(lineData)
-	err := w.encoder.Encode(data)
-	w.file.WriteString("\n")
+	record := &Record{Seq: w.nextseq(), Hash: w.CalculateHash(data), Data: data}
+	err := w.encoder.Encode(record)
 	return err
 }
 
@@ -129,17 +130,8 @@ func Exists(path string) (bool, error) {
 }
 
 // InitWal initializes WAL if directory is empty.
-func InitWal(dirPath string) *Wal {
-	var err error
-	if valid, err := Exists(dirPath); !valid {
-		log.Fatal(err)
-	}
-
+func InitWal(dirPath string) (*Wal, error) {
 	wal := Wal{dirPath: dirPath}
-	err = wal.initWalFile()
-
-	if err != nil {
-		log.Fatalf("WAL: %s", err)
-	}
-	return &wal
+	err := wal.initWalFile()
+	return &wal, err
 }
