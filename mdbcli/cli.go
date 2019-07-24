@@ -19,10 +19,10 @@ type commands struct {
 	DEL    string
 }
 
-var store = memtable.NewDB()
-
 // CommandEnum enum of supported commands
 var CommandEnum = commands{"GET", "INSERT", "SET", "UPDATE", "DELETE", "DEL"}
+
+var store = memtable.NewDB()
 
 // CommandMap map of command enum => command method
 var CommandMap = map[string]interface{}{
