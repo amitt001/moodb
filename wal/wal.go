@@ -86,7 +86,7 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 			w.baseSeq = seq + 1
 		}
 	} else if inRecovery {
-			return ErrWalNotFound
+		return ErrWalNotFound
 	}
 
 	if !inRecovery {

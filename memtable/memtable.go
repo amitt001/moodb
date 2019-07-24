@@ -35,12 +35,6 @@ func (s *KVStore) Create(key, value string) (string, error) {
 	return "Inserted 1", nil
 }
 
-// Update an alias for Create
-func (s *KVStore) Update(key, value string) (string, error) {
-	_, err := s.Create(key, value)
-	return "Updated 1", err
-}
-
 // Delete row data by key
 func (s *KVStore) Delete(key string) (string, error) {
 	s.mux.Lock()

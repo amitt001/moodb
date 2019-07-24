@@ -7,31 +7,29 @@ import (
 	"os"
 	"strings"
 
-	"github.com/amitt001/moodb/memtable"
+	"github.com/amitt001/moodb/client"
 )
 
 type commands struct {
 	GET    string
-	INSERT string
 	SET    string
-	UPDATE string
 	DELETE string
 	DEL    string
+	ID     string
 }
 
 // CommandEnum enum of supported commands
-var CommandEnum = commands{"GET", "INSERT", "SET", "UPDATE", "DELETE", "DEL"}
+var CommandEnum = commands{"GET", "SET", "DELETE", "DEL", "ID"}
 
-var store = memtable.NewDB()
+var dbClient = client.NewClient()
 
 // CommandMap map of command enum => command method
 var CommandMap = map[string]interface{}{
-	CommandEnum.GET:    store.Get,
-	CommandEnum.INSERT: store.Create,
-	CommandEnum.SET:    store.Create,
-	CommandEnum.UPDATE: store.Update,
-	CommandEnum.DELETE: store.Delete,
-	CommandEnum.DEL:    store.Delete,
+	CommandEnum.GET:    dbClient.Get,
+	CommandEnum.SET:    dbClient.Set,
+	CommandEnum.DELETE: dbClient.Del,
+	CommandEnum.DEL:    dbClient.Del,
+	CommandEnum.ID:     dbClient.GetID,
 }
 
 func processedCmd(input string) (string, string, string, error) {

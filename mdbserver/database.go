@@ -15,10 +15,6 @@ func (d *database) Set(key, value string) (string, error) {
 	return d.db.Create(key, value)
 }
 
-func (d *database) Update(key, value string) (string, error) {
-	return d.db.Update(key, value)
-}
-
 func (d *database) Del(key string) (string, error) {
 	return d.db.Delete(key)
 }

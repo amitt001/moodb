@@ -11,6 +11,4 @@ func main() {
 	fmt.Println(dbClient.Get("name"))
 	fmt.Println(dbClient.Set("name", "Kaku"))
 	fmt.Println(dbClient.Get("name"))
-	fmt.Println(dbClient.Update("name", "Kakku"))
-	fmt.Println(dbClient.Get("name"))
 }

@@ -17,3 +17,5 @@
 [] Authentication
 
 [] Logging
+
+[] Client sends an unique id. Keep that in server, validate?

@@ -10,12 +10,12 @@ enum StatusCode {
 service Mdb {
     rpc Get(GetRequest) returns (GetResponse) {}
     rpc Set(SetRequest) returns (SetResponse) {}
-    rpc Update(SetRequest) returns (SetResponse) {}
     rpc Del(DelRequest) returns (DelResponse) {}
 }
 
 message GetRequest {
     string key = 1;
+    string clientId = 2;
 }
 
 message GetResponse {
@@ -27,6 +27,7 @@ message GetResponse {
 message SetRequest {
     string key = 1;
     string value = 2;
+    string clientId = 3;
 }
 
 message SetResponse {
@@ -37,6 +38,7 @@ message SetResponse {
 
 message DelRequest {
     string key = 1;
+    string clientId = 2;
 }
 
 message DelResponse {
