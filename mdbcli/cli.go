@@ -41,11 +41,13 @@ func processedCmd(input string) (string, string, string, error) {
 	var cmd, key, value string
 	input = strings.TrimSpace(input)
 	fields := strings.Fields(input)
-	cmd = strings.ToUpper(cmd)
 
 	switch len(fields) {
 	case 1:
-		err = ErrKeyValueMissing
+		cmd = strings.ToUpper(fields[0])
+		if cmd != CommandEnum.ID {
+			err = ErrKeyValueMissing
+		}
 	case 2:
 		cmd = strings.ToUpper(fields[0])
 
@@ -91,11 +93,15 @@ func cli() {
 			continue
 		}
 
-		if value == "" {
+		// System command
+		if key == "" && value == "" {
+			result, err = method.(func() string)(), nil
+		} else if value == "" {
 			result, err = method.(func(string) (string, error))(key)
 		} else {
 			result, err = method.(func(string, string) (string, error))(key, value)
 		}
+
 		if err != nil {
 			log.Println(err)
 			continue
