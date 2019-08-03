@@ -1,7 +1,6 @@
 package wal
 
 import (
-	"fmt"
 	"io"
 	"log"
 )
@@ -19,28 +18,34 @@ func (r *Record) validHash() bool {
 }
 
 // Replay the wal data from beginning till the end
-func (w *Wal) Replay() error {
+func (w *Wal) Replay() (chan *Record, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+	rChan := make(chan *Record, 100)
 
 	var err error
 	w.file.Seek(0, 0)
-	for {
-		record := &Record{}
-		err = w.decoder.Decode(record)
-		if err == io.EOF {
-			err = nil
-			break
-		} else if err != nil {
-			break
+	go func() {
+		for {
+			record := &Record{}
+			err = w.decoder.Decode(record)
+			// Reached the END
+			if err == io.EOF {
+				err = nil
+				break
+			} else if err != nil {
+				break
+			}
+			// Validations on individual records
+			if !w.validSeq(record.Seq) {
+				log.Fatal(ErrInvalidSeq)
+			}
+			if !record.validHash() {
+				log.Fatal(ErrInvalidWalData)
+			}
+			rChan <- record
 		}
-		if !w.validSeq(record.Seq) {
-			log.Fatal(ErrInvalidSeq)
-		}
-		if !record.validHash() {
-			log.Fatal(ErrInvalidWalData)
-		}
-		fmt.Println("Got:", record)
-	}
-	return err
+		close(rChan)
+	}()
+	return rChan, err
 }

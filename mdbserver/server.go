@@ -18,6 +18,7 @@ const (
 // server is used to implement MdbServer.
 type server struct {
 	db *database
+	mode string
 }
 
 // Get implements server side Mdb Get method
@@ -56,14 +57,14 @@ func (s *server) Del(ctx context.Context, in *pb.DelRequest) (*pb.DelResponse, e
 // Run setups and starts the MooDB server
 func Run() {
 	lis, err := net.Listen("tcp", port)
-	fmt.Println("*********************")
-	fmt.Println("Started MooDB server")
-	fmt.Println("*********************")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	pb.RegisterMdbServer(s, &server{db: newDb(dbName)})
+	fmt.Println("*************")
+	fmt.Println("MooDB server")
+	fmt.Println("*************")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

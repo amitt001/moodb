@@ -75,10 +75,10 @@ func cli() {
 	reader := bufio.NewReader(os.Stdin)
 	// Recover if server is down
 	defer func() {
-        if r := recover(); r != nil {
-            fmt.Printf("Error raised while connecting to the server, Error(%s)\n", r)
-        }
-    }()
+		if r := recover(); r != nil {
+			fmt.Printf("Error raised while connecting to the server, Error(%s)\n", r)
+		}
+	}()
 
 	for {
 		fmt.Printf("o> ")
