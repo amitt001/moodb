@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	port   = ":50051"
-	dbName = "test"
+	port           = ":50051"
+	dbName         = "test"
+	serverStartMsg = "MooDB server"
 )
 
 // server is used to implement MdbServer.
 type server struct {
 	db *database
-	mode string
 }
 
 // Get implements server side Mdb Get method
@@ -63,7 +63,7 @@ func Run() {
 	s := grpc.NewServer()
 	pb.RegisterMdbServer(s, &server{db: newDb(dbName)})
 	fmt.Println("*************")
-	fmt.Println("MooDB server")
+	fmt.Println(serverStartMsg)
 	fmt.Println("*************")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

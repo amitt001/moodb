@@ -29,6 +29,7 @@ type Wal struct {
 	dirPath string
 	mu      sync.Mutex
 	file    *os.File
+	tmpFile *os.File
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
@@ -56,6 +57,21 @@ func (w *Wal) openLatestWal(path string) error {
 	fileObj, err := os.Open(path)
 	w.file = fileObj
 	return err
+}
+
+// IsWalPresent return true if a file with .wal ext found.
+func (w *Wal) IsWalPresent() bool {
+	files, _ := ioutil.ReadDir(w.dirPath)
+
+	var latestWal os.FileInfo
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".wal") {
+			latestWal = file
+			// Don't need to check all *.wal files
+			break
+		}
+	}
+	return latestWal != nil
 }
 
 func (w *Wal) initWalFile(inRecovery bool) error {
