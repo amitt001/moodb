@@ -29,7 +29,6 @@ type Wal struct {
 	dirPath string
 	mu      sync.Mutex
 	file    *os.File
-	tmpFile *os.File
 	encoder *gob.Encoder
 	decoder *gob.Decoder
 }
@@ -98,8 +97,9 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 		if err != nil {
 			return err
 		}
+		w.baseSeq = seq
 		if !inRecovery {
-			w.baseSeq = seq + 1
+			w.baseSeq++
 		}
 	} else if inRecovery {
 		return ErrWalNotFound

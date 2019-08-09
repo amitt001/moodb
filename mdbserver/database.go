@@ -13,7 +13,7 @@ const (
 	// Maybe this should be an ENUM
 	active   = "ACTIVE"
 	recovery = "RECOVERY"
-	walFile  = "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"
+	walDir   = "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"
 )
 
 var (
@@ -28,7 +28,7 @@ type database struct {
 	name    string
 	mode    string // mode DB is currently running in. Can be recovery/active
 	mu      sync.Mutex
-	rwalObj *wal.Wal // used during recovery
+	rWalObj *wal.Wal // used during recovery
 	walObj  *wal.Wal
 }
 
@@ -51,6 +51,10 @@ func (d *database) Set(key, value string) (string, error) {
 }
 
 func (d *database) Del(key string) (string, error) {
+	err := d.logRecord("DEL", key, "")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return d.db.Delete(key)
 }
 
@@ -63,12 +67,16 @@ func (d *database) setMode(mode string) {
 	d.mode = mode
 }
 
-func (d *database) initWal(recovery bool) error {
-	w, err := wal.InitWal(walFile, recovery)
+func (d *database) initWal(inRecovery bool) error {
+	w, err := wal.InitWal(walDir, inRecovery)
 	if w.IsWalPresent() == false {
 		return ErrWalNotFound
 	}
-	d.walObj = w
+	if inRecovery {
+		d.rWalObj = w
+	} else {
+		d.walObj = w
+	}
 	return err
 }
 
@@ -80,30 +88,42 @@ func newDb(name string) *database {
 	func() {
 		db.setMode(recovery)
 		defer db.setMode(active)
+		recover := true
 		err := db.initWal(true)
+		if err != nil {
+			if err == ErrWalNotFound {
+				recover = false
+			} else {
+				log.Fatalf("Recovery: %s", err)
+			}
+		}
+		err = db.initWal(false)
 		if err != nil {
 			if err == ErrWalNotFound {
 				return
 			}
-			log.Fatal(err)
+			log.Fatalf("Recovery: %s", err)
 		}
-		rChan, err := db.walObj.Replay()
-		if err != nil {
-			log.Fatal(err)
-		}
-		for record := range rChan {
-			k := record.Data.GetKey()
-			log.Println(k)
-			db.recoverySet(k, record.Data.GetValue())
+		if recover {
+			rChan, err := db.rWalObj.Replay()
+			if err != nil {
+				log.Fatalf("Recovery: %s", err)
+			}
+			for record := range rChan {
+				switch record.Data.Cmd {
+				case "SET":
+					db.Set(record.Data.GetKey(), record.Data.GetValue())
+				case "DEL":
+					db.Del(record.Data.GetKey())
+				default:
+					log.Fatal("Recovery: Invalid command")
+				}
+			}
+			// Free the recovery WAL object
+			db.rWalObj.Close()
+			db.rWalObj = nil
 		}
 	}()
-
-	err := db.initWal(false)
-	if err != nil {
-		if err != ErrWalNotFound {
-			log.Fatal(err)
-		}
-	}
 
 	log.Println("DB recovery finished")
 	return db
