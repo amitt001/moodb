@@ -1,17 +1,41 @@
 package server
 
 import (
-	"log"
-	"github.com/amitt001/moodb/wal"
+	"errors"
 	"github.com/amitt001/moodb/memtable"
+	"github.com/amitt001/moodb/wal"
+	"github.com/amitt001/moodb/wal/walpb"
+	"log"
+	"sync"
+)
+
+const (
+	// Maybe this should be an ENUM
+	active   = "ACTIVE"
+	recovery = "RECOVERY"
+	walDir   = "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"
+)
+
+var (
+	ErrWalNotFound = errors.New("Wal not present")
 )
 
 // TODO: check can both database and KVStore use an interface?
 
 // database: main db object. It wraps the `memtable` methods.
 type database struct {
-	db   *memtable.KVStore
-	name string
+	db      *memtable.KVStore
+	name    string
+	mode    string // mode DB is currently running in. Can be recovery/active
+	mu      sync.Mutex
+	rWalObj *wal.Wal // used during recovery
+	walObj  *wal.Wal
+}
+
+func (d *database) logRecord(cmd, key, value string) error {
+	record := &walpb.Data{Cmd: cmd, Key: key, Value: value}
+	err := d.walObj.AppendLog(record)
+	return err
 }
 
 func (d *database) Get(key string) (string, error) {
@@ -19,33 +43,88 @@ func (d *database) Get(key string) (string, error) {
 }
 
 func (d *database) Set(key, value string) (string, error) {
+	err := d.logRecord("SET", key, value)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return d.db.Create(key, value)
 }
 
 func (d *database) Del(key string) (string, error) {
+	err := d.logRecord("DEL", key, "")
+	if err != nil {
+		log.Fatal(err)
+	}
 	return d.db.Delete(key)
+}
+
+func (d *database) recoverySet(key, value string) (string, error) {
+	return d.db.Create(key, value)
+}
+
+// toggleMode changes the db mode from active to recovery if in active mode
+func (d *database) setMode(mode string) {
+	d.mode = mode
+}
+
+func (d *database) initWal(inRecovery bool) error {
+	w, err := wal.InitWal(walDir, inRecovery)
+	if w.IsWalPresent() == false {
+		return ErrWalNotFound
+	}
+	if inRecovery {
+		d.rWalObj = w
+	} else {
+		d.walObj = w
+	}
+	return err
 }
 
 func newDb(name string) *database {
 	db := &database{db: memtable.NewDB(), name: name}
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	log.Println("Starting DB recovery")
 	func() {
-		w, err := wal.InitWal("/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data", true)
-
+		db.setMode(recovery)
+		defer db.setMode(active)
+		recover := true
+		err := db.initWal(true)
 		if err != nil {
-			if err == wal.ErrWalNotFound {
+			if err == ErrWalNotFound {
+				recover = false
+			} else {
+				log.Fatalf("Recovery: %s", err)
+			}
+		}
+		err = db.initWal(false)
+		if err != nil {
+			if err == ErrWalNotFound {
 				return
 			}
-			log.Fatal(err)
+			log.Fatalf("Recovery: %s", err)
 		}
-		rChan, err := w.Replay()
-		if err != nil {
-			log.Fatal(err)
-		}
-		for record := range rChan {
-			db.Set(record.Data.GetKey(), record.Data.GetValue())
+		if recover {
+			rChan, err := db.rWalObj.Replay()
+			if err != nil {
+				log.Fatalf("Recovery: %s", err)
+			}
+			for record := range rChan {
+				switch record.Data.Cmd {
+				case "SET":
+					db.Set(record.Data.GetKey(), record.Data.GetValue())
+				case "DEL":
+					db.Del(record.Data.GetKey())
+				default:
+					log.Fatal("Recovery: Invalid command")
+				}
+			}
+			// Free the recovery WAL object
+			db.rWalObj.Close()
+			db.rWalObj = nil
 		}
 	}()
+
 	log.Println("DB recovery finished")
 	return db
 }

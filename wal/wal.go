@@ -58,6 +58,21 @@ func (w *Wal) openLatestWal(path string) error {
 	return err
 }
 
+// IsWalPresent return true if a file with .wal ext found.
+func (w *Wal) IsWalPresent() bool {
+	files, _ := ioutil.ReadDir(w.dirPath)
+
+	var latestWal os.FileInfo
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".wal") {
+			latestWal = file
+			// Don't need to check all *.wal files
+			break
+		}
+	}
+	return latestWal != nil
+}
+
 func (w *Wal) initWalFile(inRecovery bool) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -82,8 +97,9 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 		if err != nil {
 			return err
 		}
+		w.baseSeq = seq
 		if !inRecovery {
-			w.baseSeq = seq + 1
+			w.baseSeq++
 		}
 	} else if inRecovery {
 		return ErrWalNotFound
