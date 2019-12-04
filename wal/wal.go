@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -15,7 +14,7 @@ import (
 var fMode = os.FileMode(0644)
 
 // Record stores individual db command record. Each record
-// contains complete data abount a command.
+// contains complete data about a command.
 type Record struct {
 	Seq  int64
 	Hash uint32
@@ -38,10 +37,23 @@ func (w *Wal) Close() {
 	w.file.Close()
 }
 
+func parseWalName(str string) (seq int64, err error) {
+	if !strings.HasSuffix(str, ".wal") {
+		return 0, ErrBadWalName
+	}
+	_, err = fmt.Sscanf(str, "%016x.wal", &seq)
+	return seq, err
+}
+
+func walName(seq int64) string {
+	return fmt.Sprintf("%016x.wal", seq)
+}
+
 // WalPath returns wal's absolute path
 func (w *Wal) WalPath() string {
 	dirPath := strings.TrimRight(w.dirPath, "/")
-	return fmt.Sprintf("%s%c%d.wal", dirPath, os.PathSeparator, w.baseSeq)
+	fileName := walName(w.baseSeq)
+	return fmt.Sprintf("%s%c%s", dirPath, os.PathSeparator, fileName)
 }
 
 // touchWal creates, if not exists, & returns the fileObj for given path
@@ -93,7 +105,7 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 	// Each run creates a new wal but if a wal already exists use the next seq no.
 	if latestWal != nil {
 		walName := latestWal.Name()
-		seq, err := strconv.ParseInt(strings.Split(walName, ".")[0], 10, 64)
+		seq, err := parseWalName(walName)
 		if err != nil {
 			return err
 		}

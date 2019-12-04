@@ -32,3 +32,10 @@ Deleted 1
 o> get name
 
 ```
+
+## Log compaction
+
+- Sync policy
+- Compact by file size or by percentage increase
+- Truncate file at startup
+- Generate a snapshot file from loaded data

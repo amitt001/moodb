@@ -13,4 +13,5 @@ var (
 	// ErrInvalidWalData is raised while validating each record with it's hash. Wal
 	// recovery should stop here.
 	ErrInvalidWalData = errors.New("WAL: Invalid data found while recovering. Abort")
+	ErrBadWalName = errors.New("WAL: Bad wal name")
 )

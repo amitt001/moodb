@@ -50,7 +50,7 @@ func (s *KVStore) Delete(key string) (string, error) {
 var once sync.Once
 var store *KVStore
 
-// NewDB returns a sigleton KvStore instance
+// NewDB returns a singleton KvStore instance
 func NewDB() (store *KVStore) {
 	once.Do(func() {
 		store = &KVStore{data: make(map[string]KVRow)}

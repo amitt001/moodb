@@ -18,4 +18,6 @@
 
 [] Logging
 
+[] Error check. Is there a better approach then using check() method?
+
 [] Client sends an unique id. Keep that in server, validate?
