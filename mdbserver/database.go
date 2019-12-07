@@ -69,7 +69,7 @@ func (d *database) setMode(mode string) {
 
 func (d *database) initWal(inRecovery bool) error {
 	w, err := wal.InitWal(walDir, inRecovery)
-	if w.IsWalPresent() == false {
+	if w.IsWalPresent(inRecovery) == false {
 		return ErrWalNotFound
 	}
 	if inRecovery {
@@ -89,6 +89,7 @@ func newDb(name string) *database {
 		db.setMode(recovery)
 		defer db.setMode(active)
 		recover := true
+		// Open recovery WAL file
 		err := db.initWal(true)
 		if err != nil {
 			if err == ErrWalNotFound {
@@ -97,8 +98,10 @@ func newDb(name string) *database {
 				log.Fatalf("Recovery: %s", err)
 			}
 		}
+		// Open new WAL tmp file
 		err = db.initWal(false)
 		if err != nil {
+			// TODO check if this error can even occur?
 			if err == ErrWalNotFound {
 				return
 			}
@@ -123,6 +126,7 @@ func newDb(name string) *database {
 			db.rWalObj.Close()
 			db.rWalObj = nil
 		}
+		db.walObj.Rename()
 	}()
 
 	log.Println("DB recovery finished")

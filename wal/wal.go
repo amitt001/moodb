@@ -1,6 +1,7 @@
 package wal
 
 import (
+	"path/filepath"
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
@@ -49,14 +50,30 @@ func walName(seq int64) string {
 	return fmt.Sprintf("%016x.wal", seq)
 }
 
+func tmpWalName(seq int64) string {
+	return fmt.Sprintf("%016x.wal.tmp", seq)
+}
+
+
 // WalPath returns wal's absolute path
-func (w *Wal) WalPath() string {
+func (w *Wal) walPath(isTmp bool) string {
 	dirPath := strings.TrimRight(w.dirPath, "/")
-	fileName := walName(w.baseSeq)
+	var fileName string
+	if isTmp == true {
+		fileName = tmpWalName(w.baseSeq)
+	} else {
+		fileName = walName(w.baseSeq)
+	}
 	return fmt.Sprintf("%s%c%s", dirPath, os.PathSeparator, fileName)
 }
 
-// touchWal creates, if not exists, & returns the fileObj for given path
+// Rename the latest created WAL file
+func (w *Wal) Rename() (err error) {
+	err = os.Rename(w.walPath(true), w.walPath(false))
+	return err
+}
+
+// touchWal creates wal file, if it doesn't exists, & returns the fileObj for given path
 func (w *Wal) touchWal(path string) error {
 	// TODO use create instead?
 	fileObj, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, fMode)
@@ -71,14 +88,18 @@ func (w *Wal) openLatestWal(path string) error {
 }
 
 // IsWalPresent return true if a file with .wal ext found.
-func (w *Wal) IsWalPresent() bool {
+func (w *Wal) IsWalPresent(inRecovery bool) bool {
 	files, _ := ioutil.ReadDir(w.dirPath)
 
 	var latestWal os.FileInfo
 	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".wal") {
+		if inRecovery && strings.HasSuffix(file.Name(), ".wal") {
 			latestWal = file
 			// Don't need to check all *.wal files
+			break
+		}
+		if !inRecovery && strings.HasSuffix(file.Name(), ".wal.tmp") {
+			latestWal = file
 			break
 		}
 	}
@@ -105,7 +126,7 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 	// Each run creates a new wal but if a wal already exists use the next seq no.
 	if latestWal != nil {
 		walName := latestWal.Name()
-		seq, err := parseWalName(walName)
+		seq, err := parseWalName(filepath.Base(walName))
 		if err != nil {
 			return err
 		}
@@ -117,12 +138,12 @@ func (w *Wal) initWalFile(inRecovery bool) error {
 		return ErrWalNotFound
 	}
 
-	if !inRecovery {
-		if err := w.touchWal(w.WalPath()); err != nil {
+	if inRecovery {
+		if err := w.openLatestWal(w.walPath(false)); err != nil {
 			return err
 		}
 	} else {
-		if err := w.openLatestWal(w.WalPath()); err != nil {
+		if err := w.touchWal(w.walPath(true)); err != nil {
 			return err
 		}
 	}
