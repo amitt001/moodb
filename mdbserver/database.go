@@ -13,7 +13,6 @@ const (
 	// Maybe this should be an ENUM
 	active   = "ACTIVE"
 	recovery = "RECOVERY"
-	walDir   = "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"
 )
 
 var (
@@ -67,7 +66,7 @@ func (d *database) setMode(mode string) {
 	d.mode = mode
 }
 
-func (d *database) initWal(inRecovery bool) error {
+func (d *database) initWal(inRecovery bool, walDir string) error {
 	w, err := wal.InitWal(walDir, inRecovery)
 	if w.IsWalPresent(inRecovery) == false {
 		return ErrWalNotFound
@@ -80,7 +79,7 @@ func (d *database) initWal(inRecovery bool) error {
 	return err
 }
 
-func newDb(name string) *database {
+func newDb(name, walDir string) *database {
 	db := &database{db: memtable.NewDB(), name: name}
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -90,7 +89,7 @@ func newDb(name string) *database {
 		defer db.setMode(active)
 		recover := true
 		// Open recovery WAL file
-		err := db.initWal(true)
+		err := db.initWal(true, walDir)
 		if err != nil {
 			if err == ErrWalNotFound {
 				recover = false
@@ -99,7 +98,7 @@ func newDb(name string) *database {
 			}
 		}
 		// Open new WAL tmp file
-		err = db.initWal(false)
+		err = db.initWal(false, walDir)
 		if err != nil {
 			// TODO check if this error can even occur?
 			if err == ErrWalNotFound {

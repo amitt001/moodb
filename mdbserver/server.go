@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/amitt001/moodb/config"
 	"log"
 	"net"
 
@@ -10,15 +11,12 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	port           = ":50051"
-	dbName         = "test"
-	serverStartMsg = "MooDB server"
-)
+const serverStartMsg = "MooDB server"
 
 // server is used to implement MdbServer.
 type server struct {
-	db *database
+	db     *database
+	config *config.ServerConfig
 }
 
 // Get implements server side Mdb Get method
@@ -56,15 +54,21 @@ func (s *server) Del(ctx context.Context, in *pb.DelRequest) (*pb.DelResponse, e
 
 // Run setups and starts the MooDB server
 func Run() {
-	lis, err := net.Listen("tcp", port)
+	// Setup config
+	cfg := config.Config("server").(*config.ServerConfig)
+	// Create a fresh new DB instance.
+	db := newDb(cfg.Server.DB, cfg.Wal.Datadir)
+	serverObj := &server{db: db, config: cfg}
+	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	lis, err := net.Listen("tcp", serverAddr)
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
+
+	// Setup gRPC server
 	s := grpc.NewServer()
-	pb.RegisterMdbServer(s, &server{db: newDb(dbName)})
-	fmt.Println("*************")
-	fmt.Println(serverStartMsg)
-	fmt.Println("*************")
+	pb.RegisterMdbServer(s, serverObj)
+	fmt.Println("*************\n", serverStartMsg, "\n*************")
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

@@ -1,11 +1,11 @@
 package wal
 
 import (
-	"path/filepath"
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -53,7 +53,6 @@ func walName(seq int64) string {
 func tmpWalName(seq int64) string {
 	return fmt.Sprintf("%016x.wal.tmp", seq)
 }
-
 
 // WalPath returns wal's absolute path
 func (w *Wal) walPath(isTmp bool) string {

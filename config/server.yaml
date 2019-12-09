@@ -1,0 +1,8 @@
+server:
+  host: "localhost"
+  dbname: "defaultdb"
+  port: 50051
+  timeout: 3     # in seconds
+
+wal:
+  datadir: "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"

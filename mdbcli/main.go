@@ -4,11 +4,8 @@ import (
 	"fmt"
 )
 
-func version() string {
-	return "0.0.1"
-}
-
 func main() {
-	fmt.Printf("MooDB version %s\n", version())
+	fmt.Println("MooDB version", dbClient.Version())
+	fmt.Println("Client ID:", dbClient.ClientID)
 	cli()
 }

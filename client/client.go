@@ -3,19 +3,17 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/amitt001/moodb/config"
 	"github.com/google/uuid"
 	"log"
-	"os"
 	"time"
 
 	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
 )
 
-const defaultConfigFile = "client/config.json"
-const doPanic = false
+const doPanic = true
 
 func check(err error, methodSign string) {
 	if !doPanic {
@@ -26,18 +24,9 @@ func check(err error, methodSign string) {
 	}
 }
 
-type clientConfig struct {
-	Server struct {
-		Host string `json:"host"`
-		Port int    `json:"port"`
-		// Timeout in seconds
-		Timeout time.Duration `json:"timeout"`
-	} `json:"server"`
-}
-
 // MdbClient stores unmarshalled client config data.
 type MdbClient struct {
-	config   clientConfig
+	config   *config.ClientConfig
 	client   pb.MdbClient
 	conn     *grpc.ClientConn
 	ClientID string
@@ -47,25 +36,6 @@ type MdbClient struct {
 func (c *MdbClient) ServerAddress() string {
 	serverConfig := c.config.Server
 	return fmt.Sprintf("%s:%d", serverConfig.Host, serverConfig.Port)
-}
-
-// loadClientConfig parses and loads the client config. Takes config
-// file path as an argument. By default loads client/config.json file.
-func (c *MdbClient) loadClientConfig(configFilePath string) {
-	if configFilePath == "" {
-		configFilePath = defaultConfigFile
-	}
-	file, err := os.Open(configFilePath)
-	defer file.Close()
-	if err != nil {
-		log.Fatal(ErrConfigFileNotFound)
-	}
-	jsonParser := json.NewDecoder(file)
-	var config clientConfig
-	if err := jsonParser.Decode(&config); err != nil {
-		log.Fatal(ErrConfigParseFailed)
-	}
-	c.config = config
 }
 
 func (c *MdbClient) setupClient() {
@@ -117,11 +87,15 @@ func (c *MdbClient) GetID() string {
 	return c.ClientID
 }
 
+func (c *MdbClient) Version() string {
+	return c.config.Version
+}
+
 // NewClient returns a configured client instance to interact with server
 func NewClient() MdbClient {
 	// Load config
-	client := MdbClient{}
-	client.loadClientConfig("")
+	cfg := config.Config("client")
+	client := MdbClient{config: cfg.(*config.ClientConfig)}
 	client.setupClient()
 	return client
 }
