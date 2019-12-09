@@ -6,13 +6,16 @@
 
 [x] DB client and server
 
-[] WAL
+[x] Config
+
+[x] WAL
+
+[x] WAL recovery
+
 
 [] WAL file lock
 
-[] WAL recovery
-
-[] In-memory db snapshort
+[] In-memory db snapshot
 
 [] Authentication
 

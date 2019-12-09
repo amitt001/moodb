@@ -9,9 +9,11 @@ Blog: https://kakku.org/writing-a-simple-database/
 
 ## Run
 
-Server: `go run cmd/server/main.go -logtostderr=true`
+1. Edit config/server.yaml and config/client.yaml files to put right value for WAL datadir
 
-Client: `go run mdbcli/*.go`
+2. Server: `go run cmd/server/main.go -logtostderr=true`
+
+3. Client: `go run mdbcli/*.go`
 
 ## Commands
 
@@ -30,7 +32,6 @@ Amit
 o> del name
 Deleted 1
 o> get name
-
 ```
 
 ## Log compaction
