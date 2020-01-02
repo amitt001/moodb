@@ -2,6 +2,9 @@ package server
 
 import (
 	"context"
+	"syscall"
+	"os"
+	"os/signal"
 	"fmt"
 	"github.com/amitt001/moodb/config"
 	"log"
@@ -52,12 +55,28 @@ func (s *server) Del(ctx context.Context, in *pb.DelRequest) (*pb.DelResponse, e
 	return &pb.DelResponse{Message: value, RespMsg: respMsg, StatusCode: 204}, nil
 }
 
+
+func cleanup(db *database) {
+	db.walObj.Close()
+}
+
+
 // Run setups and starts the MooDB server
 func Run() {
 	// Setup config
 	cfg := config.Config("server").(*config.ServerConfig)
 	// Create a fresh new DB instance.
 	db := newDb(cfg.Server.DB, cfg.Wal.Datadir)
+
+	// Setup cleanup workflow
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+        <-c
+        cleanup(db)
+        os.Exit(1)
+	}()
+
 	serverObj := &server{db: db, config: cfg}
 	serverAddr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	lis, err := net.Listen("tcp", serverAddr)
@@ -70,6 +89,6 @@ func Run() {
 	pb.RegisterMdbServer(s, serverObj)
 	fmt.Println("*************\n", serverStartMsg, "\n*************")
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("Failed to serve: %v", err)
 	}
 }

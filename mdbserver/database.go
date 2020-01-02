@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"github.com/amitt001/moodb/memtable"
 	"github.com/amitt001/moodb/wal"
 	"github.com/amitt001/moodb/wal/walpb"
@@ -13,10 +12,6 @@ const (
 	// Maybe this should be an ENUM
 	active   = "ACTIVE"
 	recovery = "RECOVERY"
-)
-
-var (
-	ErrWalNotFound = errors.New("Wal not present")
 )
 
 // TODO: check can both database and KVStore use an interface?
@@ -33,7 +28,7 @@ type database struct {
 
 func (d *database) logRecord(cmd, key, value string) error {
 	record := &walpb.Data{Cmd: cmd, Key: key, Value: value}
-	err := d.walObj.AppendLog(record)
+	err := d.walObj.Write(record)
 	return err
 }
 
@@ -66,51 +61,32 @@ func (d *database) setMode(mode string) {
 	d.mode = mode
 }
 
-func (d *database) initWal(inRecovery bool, walDir string) error {
-	w, err := wal.InitWal(walDir, inRecovery)
-	if w.IsWalPresent(inRecovery) == false {
-		return ErrWalNotFound
-	}
-	if inRecovery {
-		d.rWalObj = w
-	} else {
-		d.walObj = w
-	}
-	return err
-}
-
 func newDb(name, walDir string) *database {
 	db := &database{db: memtable.NewDB(), name: name}
 	db.mu.Lock()
 	defer db.mu.Unlock()
 	log.Println("Starting DB recovery")
+	var err error
 	func() {
 		db.setMode(recovery)
 		defer db.setMode(active)
 		recover := true
 		// Open recovery WAL file
-		err := db.initWal(true, walDir)
+		db.rWalObj, err = wal.Open(walDir)
 		if err != nil {
-			if err == ErrWalNotFound {
+			if err == wal.ErrWalNotFound {
 				recover = false
 			} else {
 				log.Fatalf("Recovery: %s", err)
 			}
 		}
 		// Open new WAL tmp file
-		err = db.initWal(false, walDir)
+		db.walObj, err = wal.New(walDir)
 		if err != nil {
-			// TODO check if this error can even occur?
-			if err == ErrWalNotFound {
-				return
-			}
 			log.Fatalf("Recovery: %s", err)
 		}
 		if recover {
-			rChan, err := db.rWalObj.Replay()
-			if err != nil {
-				log.Fatalf("Recovery: %s", err)
-			}
+			rChan := db.rWalObj.Read()
 			for record := range rChan {
 				switch record.Data.Cmd {
 				case "SET":
@@ -125,7 +101,6 @@ func newDb(name, walDir string) *database {
 			db.rWalObj.Close()
 			db.rWalObj = nil
 		}
-		db.walObj.Rename()
 	}()
 
 	log.Println("DB recovery finished")
