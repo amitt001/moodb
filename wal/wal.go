@@ -16,6 +16,7 @@ const (
 	tmpWalExtension      = ".wal.tmp"
 	fMode                = os.FileMode(0644)
 	walChannelBufferSize = 100
+	logSync              = true
 )
 
 // Record stores individual db command record. Each record
@@ -180,6 +181,9 @@ func (w *Wal) Write(data []byte) error {
 
 	record := &Record{Seq: w.nextseq(), Hash: CalculateHash(data), Data: data}
 	err := w.encoder.Encode(record)
+	if logSync {
+		Fsync(w.file)
+	}
 	return err
 }
 
