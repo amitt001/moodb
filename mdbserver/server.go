@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
-	"syscall"
-	"os"
-	"os/signal"
 	"fmt"
 	"github.com/amitt001/moodb/config"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
@@ -55,11 +55,9 @@ func (s *server) Del(ctx context.Context, in *pb.DelRequest) (*pb.DelResponse, e
 	return &pb.DelResponse{Message: value, RespMsg: respMsg, StatusCode: 204}, nil
 }
 
-
 func cleanup(db *database) {
 	db.walObj.Close()
 }
-
 
 // Run setups and starts the MooDB server
 func Run() {
@@ -72,9 +70,9 @@ func Run() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
-        <-c
-        cleanup(db)
-        os.Exit(1)
+		<-c
+		cleanup(db)
+		os.Exit(1)
 	}()
 
 	serverObj := &server{db: db, config: cfg}

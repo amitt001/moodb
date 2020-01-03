@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	pb "github.com/amitt001/moodb/wal/walpb"
 )
 
 const (
@@ -25,13 +23,13 @@ const (
 type Record struct {
 	Seq  int64
 	Hash uint32
-	Data *pb.Data
+	Data []byte
 }
 
 // Wal datatype
 type Wal struct {
 	baseSeq int64
-	seq     int64
+	seq     int64 // The wal file start sequence
 	dirPath string
 	mu      sync.Mutex
 	file    *os.File
@@ -176,7 +174,7 @@ func (w *Wal) Close() {
 }
 
 // Write appends the Record to WAL
-func (w *Wal) Write(data *pb.Data) error {
+func (w *Wal) Write(data []byte) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

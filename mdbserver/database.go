@@ -1,9 +1,10 @@
 package server
 
 import (
+	"github.com/amitt001/moodb/mdbserver/mdbserverpb"
 	"github.com/amitt001/moodb/memtable"
 	"github.com/amitt001/moodb/wal"
-	"github.com/amitt001/moodb/wal/walpb"
+	"github.com/golang/protobuf/proto"
 	"log"
 	"sync"
 )
@@ -27,8 +28,11 @@ type database struct {
 }
 
 func (d *database) logRecord(cmd, key, value string) error {
-	record := &walpb.Data{Cmd: cmd, Key: key, Value: value}
-	err := d.walObj.Write(record)
+	record, err := proto.Marshal(&mdbserverpb.Record{Cmd: cmd, Key: key, Value: value})
+	if err != nil {
+		return err
+	}
+	err = d.walObj.Write(record)
 	return err
 }
 
@@ -88,11 +92,14 @@ func newDb(name, walDir string) *database {
 		if recover {
 			rChan := db.rWalObj.Read()
 			for record := range rChan {
-				switch record.Data.Cmd {
+				recordData := &mdbserverpb.Record{}
+				err = proto.Unmarshal(record.Data, recordData)
+				// TODO handle error here
+				switch recordData.Cmd {
 				case "SET":
-					db.Set(record.Data.GetKey(), record.Data.GetValue())
+					db.Set(recordData.GetKey(), recordData.GetValue())
 				case "DEL":
-					db.Del(record.Data.GetKey())
+					db.Del(recordData.GetKey())
 				default:
 					log.Fatal("Recovery: Invalid command")
 				}

@@ -40,8 +40,6 @@ Wal module can be used separately.
 
 `go get "github.com/amitt001/moodb/wal"`
 
-`go get github.com/amitt001/moodb/wal/walpb`
-
 **Usage**:
 
 ```
@@ -53,8 +51,6 @@ for i := range walObj.Read() {
 
 // New WAL
 walObj, err = wal.New(dirPath)
-record := &walpb.Data{Cmd: cmd, Key: key, Value: value}
-err := d.walObj.Write(record)
 ```
 
 

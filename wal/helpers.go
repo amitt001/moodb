@@ -4,13 +4,9 @@ import (
 	"fmt"
 	"hash/crc32"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"syscall"
-
-	pb "github.com/amitt001/moodb/wal/walpb"
-	"github.com/golang/protobuf/proto"
 )
 
 const (
@@ -21,13 +17,9 @@ const (
 var crcTable = crc32.MakeTable(crc32.Castagnoli)
 
 // CalculateHash returns the crc32 value for data
-func CalculateHash(data *pb.Data) uint32 {
+func CalculateHash(data []byte) uint32 {
 	h := crc32.New(crcTable)
-	d, err := proto.Marshal(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	h.Write(d)
+	h.Write(data)
 	return h.Sum32()
 }
 
