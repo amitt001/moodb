@@ -7,4 +7,4 @@ server:
   timeout: 3     # in seconds
 
 wal:
-  datadir: "/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data"
+  datadir: "./data"

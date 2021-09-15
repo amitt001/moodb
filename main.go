@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
-	"github.com/amitt001/moodb/wal"
-	"github.com/amitt001/moodb/wal/walpb"
+	"moodb/wal"
 )
 
 func check(err error) {
@@ -15,20 +15,24 @@ func check(err error) {
 }
 
 func main() {
-	w, err := wal.InitWal("/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data", false)
+	path, err := os.Getwd()
+	if err != nil {
+		log.Println(err)
+	}
+	w, err := wal.New(fmt.Sprintf("%s/data", path), false)
 	check(err)
 	kvrow := &walpb.Data{Cmd: "SET", Key: "Name", Value: "Amit"}
-	err = w.AppendLog(kvrow)
+	err = w.Write(kvrow)
 	check(err)
 	kvrow = &walpb.Data{Cmd: "SET", Key: "Name", Value: "Amit1"}
-	err = w.AppendLog(kvrow)
+	err = w.Write(kvrow)
 	check(err)
 	kvrow = &walpb.Data{Cmd: "SET", Key: "Name", Value: "Amit2"}
-	err = w.AppendLog(kvrow)
+	err = w.Write(kvrow)
 	check(err)
 	w = nil
 
-	w, _ = wal.InitWal("/Users/amittripathi/codes/go/src/github.com/amitt001/moodb/data", true)
+	w, _ = wal.InitWal(fmt.Sprintf("%s/data", path), true)
 
 	rChan, err := w.Replay()
 	check(err)

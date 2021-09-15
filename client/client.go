@@ -4,12 +4,12 @@ package client
 import (
 	"context"
 	"fmt"
-	"github.com/amitt001/moodb/config"
+	"moodb/config"
 	"github.com/google/uuid"
 	"log"
 	"time"
 
-	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
+	pb "moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
 )
 

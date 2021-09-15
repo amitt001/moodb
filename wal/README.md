@@ -13,8 +13,6 @@ When data is written to the network socket it is read by the server in buffer i.
 
 ## Installation
 
-`go get -u github.com/tidwall/wal`
-
 ## Example
 
 ```

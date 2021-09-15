@@ -3,14 +3,14 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/amitt001/moodb/config"
+	"moodb/config"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
+	pb "moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
 )
 
@@ -20,6 +20,7 @@ const serverStartMsg = "MooDB server"
 type server struct {
 	db     *database
 	config *config.ServerConfig
+	pb.UnimplementedMdbServer
 }
 
 // Get implements server side Mdb Get method

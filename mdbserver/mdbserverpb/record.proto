@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+option go_package="github.com/amitt001/moodb/mdbserver/mdbserverpb";
 package mdbserverpb;
 
 message Record {

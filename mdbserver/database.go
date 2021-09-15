@@ -1,9 +1,9 @@
 package server
 
 import (
-	"github.com/amitt001/moodb/mdbserver/mdbserverpb"
-	"github.com/amitt001/moodb/memtable"
-	"github.com/amitt001/moodb/wal"
+	"moodb/mdbserver/mdbserverpb"
+	"moodb/memtable"
+	"moodb/wal"
 	"github.com/golang/protobuf/proto"
 	"log"
 	"sync"

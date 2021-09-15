@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/amitt001/moodb/client"
+	"moodb/client"
 )
 
 type commands struct {

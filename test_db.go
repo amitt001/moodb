@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/amitt001/moodb/client"
-	server "github.com/amitt001/moodb/mdbserver"
+	"moodb/client"
+	server "moodb/mdbserver"
 	"sync"
 	"time"
 )

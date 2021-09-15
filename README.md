@@ -2,26 +2,33 @@
 
 It's a WIP(Work in progress)
 
-A simple persistent key-value database implemeneted in Go.
+A simple persistent key-value database implemented in Go.
 
 Blog: https://kakku.org/writing-a-simple-database/
 
-
 ## Run
 
-1. Edit config/server.yaml and config/client.yaml files to put right value for WAL datadir
+- Make sure you have Go installed and $GOPATH set
+  - Check `echo $GOPATH` returns a valid path
 
-2. Server: `go run cmd/server/main.go -logtostderr=true`
+- Run `mkdir -p $GOPATH/src/github.com/amitt001`
 
-3. Client: `go run mdbcli/*.go`
+- Clone repository `git clone https://github.com/amitt001/moodb.git`
+
+- `cd $GOPATH/src/github.com/amitt001/moodb`
+
+- Generate protobuf client and server
+  - `protoc --proto_path=mdbserver/mdbserverpb --go_out=mdbserver/mdbserverpb --go_opt=paths=source_relative --go-grpc_out=mdbserver/mdbserverpb --go-grpc_opt=paths=source_relative mdbserver/mdbserverpb/*.proto`
+
+- Create data directory to save write-ahead-log(WAL) files `mkdir data`
+
+1. Run server: `go run cmd/server/main.go -logtostderr=true`
+
+2. Open a new terminal window and run client: `go run mdbcli/*.go`
 
 ## Commands
 
 In the client shell
-
-```
-⇒  go run mdbcli/*.go
-```
 
 ```
 MooDB version 0.0.1
@@ -53,16 +60,12 @@ for i := range walObj.Read() {
 walObj, err = wal.New(dirPath)
 ```
 
-
-
 ## Log compaction
 
 - Sync policy
 - Compact by file size or by percentage increase
 - Truncate file at startup
 - Generate a snapshot file from loaded data
-
-
 
 ## Debug
 
