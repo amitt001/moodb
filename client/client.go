@@ -4,13 +4,13 @@ package client
 import (
 	"context"
 	"fmt"
-	"moodb/config"
 	"github.com/google/uuid"
 	"log"
+	"github.com/amitt001/moodb/config"
 	"time"
 
-	pb "moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
+	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
 )
 
 const doPanic = true

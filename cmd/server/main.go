@@ -1,7 +1,7 @@
 package main
 
 import (
-	server "moodb/mdbserver"
+	server "github.com/amitt001/moodb/mdbserver"
 )
 
 func main() {

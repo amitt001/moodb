@@ -3,15 +3,15 @@ package server
 import (
 	"context"
 	"fmt"
-	"moodb/config"
 	"log"
+	"github.com/amitt001/moodb/config"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
-	pb "moodb/mdbserver/mdbserverpb"
 	"google.golang.org/grpc"
+	pb "github.com/amitt001/moodb/mdbserver/mdbserverpb"
 )
 
 const serverStartMsg = "MooDB server"
@@ -65,7 +65,7 @@ func Run() {
 	// Setup config
 	cfg := config.Config("server").(*config.ServerConfig)
 	// Create a fresh new DB instance.
-	db := newDb(cfg.Server.DB, cfg.Wal.Datadir)
+	db := NewDb(cfg.Server.DB, cfg.Wal.Datadir)
 
 	// Setup cleanup workflow
 	c := make(chan os.Signal, 1)

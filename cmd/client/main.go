@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"moodb/client"
+	"github.com/amitt001/moodb/client"
 )
 
 func main() {

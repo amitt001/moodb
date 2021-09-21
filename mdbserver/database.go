@@ -1,11 +1,11 @@
 package server
 
 import (
-	"moodb/mdbserver/mdbserverpb"
-	"moodb/memtable"
-	"moodb/wal"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"log"
+	"github.com/amitt001/moodb/mdbserver/mdbserverpb"
+	"github.com/amitt001/moodb/memtable"
+	"github.com/amitt001/moodb/wal"
 	"sync"
 )
 
@@ -65,7 +65,7 @@ func (d *database) setMode(mode string) {
 	d.mode = mode
 }
 
-func newDb(name, walDir string) *database {
+func NewDb(name, walDir string) *database {
 	db := &database{db: memtable.NewDB(), name: name}
 	db.mu.Lock()
 	defer db.mu.Unlock()
